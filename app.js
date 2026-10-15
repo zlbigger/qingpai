@@ -37,7 +37,8 @@ function placeAtCaret(){
    if(block&&block!==editor&&!block.closest('.composer-images')){
      const tail=r.cloneRange();tail.setEnd(block,block.childNodes.length);const rest=tail.extractContents();
      if(rest.textContent.trim()){const next=document.createElement('p');next.append(rest);block.after(next);}
-     const index=Array.from(editor.children).filter(n=>!n.classList.contains('composer-images')).indexOf(block);
+     const siblings=Array.from(editor.children),beforeCount=siblings.slice(0,siblings.indexOf(block)).filter(n=>!n.classList.contains('composer-images')&&n.textContent.trim()).length;
+     const index=beforeCount+(block.textContent.trim()?0:-1);if(!block.textContent.trim())block.remove();
      readComposer();$('imagePosition').value=index<0?'start':String(index);
    }
  }
