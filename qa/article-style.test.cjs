@@ -12,6 +12,7 @@ const ui=d.getElementById('qingpai-extension').shadowRoot;
 const click=async selector=>{ui.querySelector(selector).click();await new Promise(r=>setImmediate(r));};
 const select=node=>{const r=d.createRange();r.selectNodeContents(node);w.getSelection().removeAllRanges();w.getSelection().addRange(r);d.dispatchEvent(new w.Event('selectionchange'));};
 (async()=>{
+ const picker=d.createElement('div');picker.className='js_img_dropdown_menu';picker.innerHTML='<button class="js_img_from_local">图库</button>';d.body.append(picker);let pickerOpens=0;picker.firstChild.onclick=()=>pickerOpens++;await click('#counts [data-n="3"]');assert.equal(pickerOpens,0);picker.remove();
  const before=e.innerHTML,images=e.querySelector('[data-qingpai-v6-layout]').outerHTML;
  await click('[data-theme="book"]');
  assert.equal(e.querySelector('h2').style.fontSize,'21px');
