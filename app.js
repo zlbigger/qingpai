@@ -5,6 +5,49 @@ const controls=['font','size','leading','paragraph','color','ratio','gap','radiu
 function message(text){$('feedback').textContent=text;}
 function formatted(){const root=document.createElement('section');root.style.cssText=`font-family:${fonts[$('font').value]};font-size:${$('size').value}px;line-height:${$('leading').value};color:${$('color').value};padding:0 8px;overflow-wrap:break-word;`;const blocks=$('text').value.trim().split(/\n\s*\n/).filter(Boolean);for(const block of blocks){const heading=/^#{1,3}\s/.test(block);const p=document.createElement(heading?'h2':'p');p.textContent=block.replace(/^#{1,3}\s/,'');p.style.cssText=`margin:0 0 ${$('paragraph').value}px;white-space:pre-wrap;${heading?'font-size:22px;font-weight:600;line-height:1.5;':''}`;root.append(p);}return root;}
 function swap(a,b){if(a<0||b<0||a>=images.length||b>=images.length)return;[images[a],images[b]]=[images[b],images[a]];render();}
+let composerRange=null,composerUpdating=false;
+function drawComposer(){
+ if(composerUpdating)return;
+ const editor=$('composer');editor.replaceChildren();
+ const blocks=$('text').value.trim().split(/\n\s*\n/).filter(Boolean).map(text=>{const p=document.createElement('p');p.textContent=text;editor.append(p);return p;});
+ if(!blocks.length){const p=document.createElement('p');p.append(document.createElement('br'));editor.append(p);blocks.push(p);}
+ if(images.length){const card=document.createElement('div');card.className='composer-images';card.contentEditable='false';card.setAttribute('aria-label','正文中的图片组合');
+ const label=document.createElement('small');label.textContent=`图片组合 · ${Math.min(count,images.length)} 张`;card.append(label);
+ const tiles=document.createElement('div');tiles.style.cssText=`display:grid;grid-template-columns:repeat(${count===2||count===4?2:3},minmax(0,1fr));gap:4px`;
+ for(const item of images.slice(0,count)){const img=document.createElement('img');img.src=item.src;img.alt=item.name;tiles.append(img);}card.append(tiles);
+ const at=$('imagePosition').value;if(at==='start')editor.prepend(card);else if(at==='end'||!blocks[Number(at)])editor.append(card);else blocks[Number(at)].after(card);
+ }
+ composerRange=null;
+}
+function readComposer(){
+ const editor=$('composer'),parts=[];let imageAfter=null;
+ for(const node of editor.childNodes){if(node.nodeType===1&&node.classList.contains('composer-images')){imageAfter=parts.length-1;continue;}const text=(node.nodeType===3?node.textContent:node.innerText).replace(/\r/g,'').trim();if(text)parts.push(text);}
+ if(imageAfter===null&&images.length)images=[];
+ $('text').value=parts.join('\n\n');
+ // Rebuild the position choices before updating the selected anchor.
+ const at=imageAfter===null?'end':imageAfter<0?'start':String(imageAfter);
+ composerUpdating=true;render();$('imagePosition').value=at;render();composerUpdating=false;
+}
+function placeAtCaret(){
+ const editor=$('composer'),r=composerRange;
+ readComposer();
+ if(r&&editor.contains(r.startContainer)){
+   const block=(r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement).closest('p,div');
+   if(block&&block!==editor&&!block.closest('.composer-images')){
+     const tail=r.cloneRange();tail.setEnd(block,block.childNodes.length);const rest=tail.extractContents();
+     if(rest.textContent.trim()){const next=document.createElement('p');next.append(rest);block.after(next);}
+     const index=Array.from(editor.children).filter(n=>!n.classList.contains('composer-images')).indexOf(block);
+     readComposer();$('imagePosition').value=index<0?'start':String(index);
+   }
+ }
+ render();message(images.length?'图片组合已插入左侧正文，右侧已同步。':'位置已记录，请选择图片；选好后会显示在这里。');
+}
+$('composer').addEventListener('input',readComposer);
+const rememberComposer=()=>{const s=getSelection();if(s.rangeCount&&$('composer').contains(s.anchorNode))composerRange=s.getRangeAt(0).cloneRange();};
+$('composer').addEventListener('keyup',rememberComposer);$('composer').addEventListener('mouseup',rememberComposer);
+$('composer').addEventListener('paste',event=>{event.preventDefault();document.execCommand('insertText',false,event.clipboardData.getData('text/plain'));});
+$('insertAtCaret').addEventListener('pointerdown',event=>event.preventDefault());$('insertAtCaret').onclick=()=>{placeAtCaret();if(!images.length)$('images').click();};
+$('images').addEventListener('click',()=>{if(composerRange)placeAtCaret();});
 function render(){
  const root=formatted(),position=$('imagePosition'),previous=position.value;
  position.replaceChildren();for(const [value,label] of [['end','文末'],['start','文首'],...Array.from(root.children).map((node,i)=>[String(i),`第 ${i+1} 段后 · ${node.textContent.slice(0,18)}`])]){const option=document.createElement('option');option.value=value;option.textContent=label;position.append(option);}
@@ -16,7 +59,7 @@ function render(){
  if(at==='start')root.prepend(gridNode,captionNode);else if(at==='end'||!blocks[Number(at)])root.append(gridNode,captionNode);else blocks[Number(at)].after(gridNode,captionNode);
  blocks.forEach((node,i)=>{node.dataset.imageAnchor=String(i);node.classList.toggle('image-anchor',at===String(i));node.title='点击将图片放在这段之后';});
  $('positionHint').textContent=at==='start'?'图片将插在文章开头':at==='end'?'图片将插在文章末尾':`图片将插在第 ${Number(at)+1} 段之后`;
-const cols=count===2?2:count===4?2:3;const grid=$('grid');grid.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;grid.style.gap=$('gap').value+'px';grid.replaceChildren();for(let i=0;i<count;i++){const tile=document.createElement('div');tile.className='tile';tile.style.aspectRatio=$('ratio').value;tile.style.borderRadius=$('radius').value+'px';if(images[i]){const img=document.createElement('img');img.src=images[i].src;img.alt=images[i].name;tile.append(img);tile.draggable=true;tile.addEventListener('dragstart',()=>dragIndex=i);tile.addEventListener('dragover',e=>e.preventDefault());tile.addEventListener('drop',e=>{e.preventDefault();if(dragIndex!==null)swap(dragIndex,i);dragIndex=null;});const nav=document.createElement('span');nav.className='move';for(const [label,delta] of [['←',-1],['→',1]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',`第 ${i+1} 张图片${delta<0?'前移':'后移'}`);b.disabled=i+delta<0||i+delta>=Math.min(count,images.length);b.onclick=()=>swap(i,i+delta);nav.append(b);}tile.append(nav);}else tile.textContent=String(i+1).padStart(2,'0');grid.append(tile);}$('captionPreview').textContent=$('caption').value;const n=Math.min(count,images.length);$('imageStatus').textContent=images.length?`已选 ${images.length} 张，本布局使用前 ${n} 张${n<count?`，还需 ${count-n} 张才能导出`:''}。`:'先选择图片；下方色块仅示意布局，不会导出。';}
+const cols=count===2?2:count===4?2:3;const grid=$('grid');grid.style.display=images.length?'grid':'none';grid.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;grid.style.gap=$('gap').value+'px';grid.replaceChildren();for(let i=0;i<count;i++){const tile=document.createElement('div');tile.className='tile';tile.style.aspectRatio=$('ratio').value;tile.style.borderRadius=$('radius').value+'px';if(images[i]){const img=document.createElement('img');img.src=images[i].src;img.alt=images[i].name;tile.append(img);tile.draggable=true;tile.addEventListener('dragstart',()=>dragIndex=i);tile.addEventListener('dragover',e=>e.preventDefault());tile.addEventListener('drop',e=>{e.preventDefault();if(dragIndex!==null)swap(dragIndex,i);dragIndex=null;});const nav=document.createElement('span');nav.className='move';for(const [label,delta] of [['←',-1],['→',1]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',`第 ${i+1} 张图片${delta<0?'前移':'后移'}`);b.disabled=i+delta<0||i+delta>=Math.min(count,images.length);b.onclick=()=>swap(i,i+delta);nav.append(b);}tile.append(nav);}else tile.textContent=String(i+1).padStart(2,'0');grid.append(tile);}$('captionPreview').textContent=$('caption').value;const n=Math.min(count,images.length);$('imageStatus').textContent=images.length?`已选 ${images.length} 张，本布局使用前 ${n} 张${n<count?`，还需 ${count-n} 张才能导出`:''}。`:'先选择图片；下方色块仅示意布局，不会导出。';drawComposer();}
 for(const id of [...controls,'text'])$(id).addEventListener('input',()=>{render();if(controls.includes(id)){try{localStorage.setItem('qingpai-settings',JSON.stringify(Object.fromEntries(controls.map(k=>[k,$(k).value]))));}catch{}}});
 $('imagePosition').addEventListener('change',render);
 $('preview').addEventListener('click',event=>{const block=event.target.closest('[data-image-anchor]');if(!block)return;$('imagePosition').value=block.dataset.imageAnchor;render();message(`图片位置已设为第 ${Number(block.dataset.imageAnchor)+1} 段之后。`);});
