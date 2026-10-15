@@ -16,6 +16,7 @@ function drawComposer(){
  const tiles=document.createElement('div');tiles.style.cssText=`display:grid;grid-template-columns:repeat(${count===2||count===4?2:3},minmax(0,1fr));gap:4px`;
  for(const item of images.slice(0,count)){const img=document.createElement('img');img.src=item.src;img.alt=item.name;tiles.append(img);}card.append(tiles);
  const at=$('imagePosition').value;if(at==='start')editor.prepend(card);else if(at==='end'||!blocks[Number(at)])editor.append(card);else blocks[Number(at)].after(card);
+ if(card===editor.lastElementChild){const tail=document.createElement('p');tail.append(document.createElement('br'));editor.append(tail);}
  }
  composerRange=null;
 }
