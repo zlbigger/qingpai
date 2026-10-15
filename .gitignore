@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.zip
+.DS_Store
+.env
+.env.*
+*.log
+qa/verification.md
+qa/wechat-*.png
+/plugin-preview*.png
+/preview.png

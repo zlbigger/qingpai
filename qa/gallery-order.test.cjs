@@ -1,0 +1,18 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync(require('node:path').join(__dirname, '../content.js'), 'utf8');
+const start = source.indexOf('  function orderGallery(');
+const end = source.indexOf('  function gallerySequence(', start);
+const context = vm.createContext({});
+vm.runInContext('const galleryOrders=new WeakMap();' + source.slice(start, end) + ';globalThis.run=orderGallery;globalThis.orders=galleryOrders;', context);
+const modal = {};
+const items = ['a', 'b', 'c'].map(src => ({src}));
+const names = values => Array.from(values, item => item.src);
+assert.deepEqual(names(context.run(modal, items)), ['a', 'b', 'c']);
+context.orders.set(modal, ['c', 'a', 'b']);
+assert.deepEqual(names(context.run(modal, items)), ['c', 'a', 'b']);
+assert.deepEqual(names(context.run(modal, [items[0], items[1]])), ['a', 'b']);
+assert.deepEqual(names(context.run(modal, items)), ['a', 'b', 'c']);
+assert.deepEqual(names(context.run({}, items)), ['a', 'b', 'c']);
+console.log('Gallery ordering: custom order, deselection, reselection, and dialog isolation passed.');
