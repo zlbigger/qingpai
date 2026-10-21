@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "轻排 · 公众号排版",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "description": "在公众号正文编辑器里调整字体、直接插入保留原图比例的图片组合。",
   "permissions": [
     "activeTab"
