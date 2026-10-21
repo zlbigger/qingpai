@@ -1,11 +1,11 @@
 {
   "name": "qingpai",
-  "version": "0.19.1",
+  "version": "0.19.2",
   "private": true,
   "description": "轻排：按个人习惯制作的公众号排版插件与独立工作台",
   "license": "MIT",
   "scripts": {
-    "test": "node --check app.js && node --check content.js && node --check page-bridge.js && node qa/article-style.test.cjs && node qa/gallery-order.test.cjs && node qa/published-layout.test.cjs && node qa/image-exit.test.cjs && node scripts/check-extension.cjs",
+    "test": "node --check app.js && node --check content.js && node --check page-bridge.js && node qa/article-style.test.cjs && node qa/gallery-order.test.cjs && node qa/published-layout.test.cjs && node qa/image-exit.test.cjs && node qa/text-preservation.test.cjs && node scripts/check-extension.cjs",
     "package": "python3 scripts/package.py",
     "start": "python3 -m http.server 8765 --bind 127.0.0.1"
   },
