@@ -42,7 +42,7 @@
     // Keep native dropdowns above the dock and the following article controls.
     const toolbarStyle=getComputedStyle(toolbar);
     if(toolbarStyle.position==='static')toolbar.style.position='relative';
-    if(!(Number(toolbarStyle.zIndex)>=2))toolbar.style.zIndex='2';
+    if(!(Number(toolbarStyle.zIndex)>=3))toolbar.style.zIndex='3';
     let mount=document.getElementById('qingpai-article-tools');
     if(!mount){
       mount=document.createElement('div');mount.id='qingpai-article-tools';
