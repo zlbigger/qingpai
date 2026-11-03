@@ -30,10 +30,22 @@
     view.dispatch(tr.setMeta('qingpaiStyle',true));
     return {ok:true,model:true,changed:request.changes.length};
   }
+  function modelNodeFor(view,element){let match=null;view.state.doc.descendants((node,pos)=>{if(view.nodeDOM(pos)===element){match={node,pos};return false;}});return match;}
+  function imageModelOperation(request){const editor=bodyEditor(),view=editorView(editor),target=document.getElementById(request.targetId);if(!view||!target||!editor.contains(target)||target.outerHTML!==request.expected)throw new Error('图片位置或内容已变化，请重新选中图片组。');const entry=modelNodeFor(view,target);if(!entry)throw new Error('未找到图片组在微信正文中的位置。');
+    if(request.action==='remove-image-operation'){
+      if(!target.matches('[data-qingpai-v6-layout],img')&&!(target.id.startsWith('qingpai-after-')&&!target.textContent.trim()&&!target.querySelector('img,video,audio,iframe,table,svg')))throw new Error('只能撤销图片组或新建的空行。');
+      const ranges=[[entry.pos,entry.pos+entry.node.nodeSize]];if(request.tailId){const tail=document.getElementById(request.tailId);if(!tail||!editor.contains(tail)||tail.outerHTML!==request.tailExpected||tail.textContent.trim()||tail.querySelector('img,video,audio,iframe,table,svg'))throw new Error('图片后方已有编辑，请使用微信撤销。');const tailEntry=modelNodeFor(view,tail);if(!tailEntry)throw new Error('未找到图片后方空行的位置。');ranges.push([tailEntry.pos,tailEntry.pos+tailEntry.node.nodeSize]);}const tr=view.state.tr;for(const [from,to]of ranges.sort((a,b)=>b[0]-a[0]))tr.delete(from,to);view.dispatch(tr);return{ok:true};
+    }
+    const after=entry.pos+entry.node.nodeSize,next=view.state.doc.nodeAt(after);let media=false;next?.descendants(node=>{if(node.isAtom&&!node.isText)media=true;});let tr=view.state.tr,created=false,id=null;
+    if(!(next&&(next.isTextblock||next.type===view.state.schema.nodes.para||next.type===view.state.schema.nodes.paragraph))||next.textContent.trim()||media){const type=view.state.schema.nodes.para||view.state.schema.nodes.paragraph;if(!type)throw new Error('微信当前正文不支持新建文字段落。');id='qingpai-after-'+Date.now();const attrs=Object.prototype.hasOwnProperty.call(type.spec.attrs||{},'attributes')?{attributes:{id}}:{};const leafType=view.state.schema.nodes.leaf,leaf=leafType&&type.contentMatch.matchType(leafType)?leafType.createAndFill():null;const para=type.createAndFill(attrs,leaf||undefined);if(!para)throw new Error('无法创建正文空行。');tr.insert(after,para);created=true;}
+    let candidate=tr.doc.nodeAt(after),hasTextblock=!!candidate?.isTextblock;candidate?.descendants(node=>{if(node.isTextblock)hasTextblock=true;});const leafType=view.state.schema.nodes.leaf;if(!hasTextblock&&candidate&&leafType&&candidate.type.contentMatch.matchType(leafType)){const leaf=leafType.createAndFill();if(leaf)tr.insert(after+1,leaf);}
+    const Selection=view.state.selection.constructor,writable=tr.doc.nodeAt(after);let cursor=after+1;if(writable&&!writable.isTextblock){let inner=null;writable.descendants((node,offset)=>{if(inner===null&&node.isTextblock){inner=after+offset+2;return false;}});if(inner!==null)cursor=inner;}tr.setSelection(Selection.near(tr.doc.resolve(cursor),1));view.dispatch(tr);view.focus();return{ok:true,created,nodeId:id};
+  }
   document.addEventListener('qingpai-editor-request', event => {
     let request;
     try { request = JSON.parse(event.detail); } catch { return; }
     const reply = result => document.dispatchEvent(new CustomEvent('qingpai-editor-response', {detail:JSON.stringify({id:request.id,...result})}));
+    if(request.action==='remove-image-operation'||request.action==='continue-after-image'){try{reply(imageModelOperation(request));}catch(err){reply({error:err.message});}return;}
     if(request.action==='style-probe'){reply({available:!!editorView(bodyEditor())});return;}
     if(request.action==='apply-styles'){try{reply(applyModelStyles(request));}catch(err){reply({error:err.message});}return;}
     if(request.action==='gallery-selection'){
@@ -52,8 +64,7 @@
     const target = request.targetId && document.getElementById(request.targetId);
     if (target && target.closest('[contenteditable="true"]')) {
       api.invoke({apiName:'mp_editor_set_selection',apiParam:{container:target,selectCurrent:true},sucCb:insert,errCb:()=>reply({error:'无法选中需要更新的图片组合。'})});
-    } else if(request.selectAll) {
-      api.invoke({apiName:'mp_editor_set_selection',apiParam:{selectAllMsg:true},sucCb:insert,errCb:()=>reply({error:'无法选中正文。'})});
+    } else if(request.selectAll) { reply({error:'已禁止整篇 HTML 替换，请使用段落样式或图片组操作。'});
     } else if(request.targetId) { reply({error:'原图片位置已变化，请重新选中。'}); }
     else insert();
   });
