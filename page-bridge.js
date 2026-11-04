@@ -1,4 +1,12 @@
 (() => {
+  // Only long-form article editors are supported. Other WeChat content types
+  // must not mount controls, observe galleries, or register editing handlers.
+  function isArticlePage(){
+    const url=new URL(location.href);
+    if(['127.0.0.1','localhost'].includes(url.hostname))return true; // local QA fixtures
+    return url.protocol==='https:'&&url.hostname==='mp.weixin.qq.com'&&url.pathname==='/cgi-bin/appmsg'&&url.searchParams.get('action')==='edit'&&['10','77'].includes(url.searchParams.get('type'));
+  }
+  if(!isArticlePage())return;
   if (window.__qingpaiBridgeInstalled) return;
   window.__qingpaiBridgeInstalled = true;
   function bodyEditor(){return Array.from(document.querySelectorAll('.view .ProseMirror,.mock-iframe-body .ProseMirror')).find(e=>!e.closest('#js_title_main,.title-editor__input'));}

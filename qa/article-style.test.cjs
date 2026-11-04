@@ -1,6 +1,6 @@
 const {JSDOM}=require('jsdom');
 const fs=require('node:fs'),assert=require('node:assert/strict');
-const dom=new JSDOM('<body><div class="view" contenteditable="true"><h2>初始标题</h2><p>正文 <strong>重点</strong> <a href="https://example.com">链接</a></p><p>另一段</p><section data-qingpai-v6-layout="2"><table><tr><td><img src="https://example.com/1.png" style="width:100%;height:auto"></td></tr></table></section><pre><code>const a = 1;</code></pre></div></body>',{url:'https://mp.weixin.qq.com',runScripts:'outside-only',pretendToBeVisual:true});
+const dom=new JSDOM('<body><div class="view" contenteditable="true"><h2>初始标题</h2><p>正文 <strong>重点</strong> <a href="https://example.com">链接</a></p><p>另一段</p><section data-qingpai-v6-layout="2"><table><tr><td><img src="https://example.com/1.png" style="width:100%;height:auto"></td></tr></table></section><pre><code>const a = 1;</code></pre></div></body>',{url:'https://mp.weixin.qq.com/cgi-bin/appmsg?action=edit&type=77',runScripts:'outside-only',pretendToBeVisual:true});
 const w=dom.window,d=w.document,e=d.querySelector('.view');w.requestAnimationFrame=fn=>setTimeout(()=>{if(w.document)fn();},0);w.cancelAnimationFrame=clearTimeout;
 w.HTMLElement.prototype.getBoundingClientRect=()=>({left:400,top:180,right:1000,bottom:700,width:600,height:520});
 w.HTMLElement.prototype.scrollIntoView=()=>{};
