@@ -60,7 +60,7 @@
       const modal=Array.from(document.querySelectorAll('.weui-desktop-dialog_img-picker')).find(e=>e.getBoundingClientRect().width>0);
       let component=modal?.__vue__;while(component&&component.$options?.name!=='mp-image-dialog')component=component.$parent;
       if(!component||!Array.isArray(component.selectedImgs)){reply({error:'未能读取图库选择，请取消后重新打开图库。'});return;}
-      const items=component.selectedImgs.map(item=>({src:item.url,alt:item.name||''}));
+      const items=component.selectedImgs.map(item=>({src:typeof item.url==='string'?item.url.replace(/^http:\/\/((?:[a-z0-9-]+\.)*qpic\.cn)(?=[:/]|$)/i,'https://$1'):item.url,alt:item.name||''}));
       if(items.some(item=>typeof item.src!=='string'||!/^https:\/\//.test(item.src))){reply({error:'图库返回了不支持的图片地址。'});return;}
       reply({items});return;
     }

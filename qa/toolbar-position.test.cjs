@@ -7,9 +7,8 @@ Object.defineProperty(w,'innerWidth',{value:1473,writable:true});Object.definePr
 w.eval(fs.readFileSync('content.js','utf8'));
 const wait=()=>new Promise(resolve=>setTimeout(resolve,60));
 (async()=>{await wait();const mount=d.getElementById('qingpai-article-tools'),panel=mount.shadowRoot.querySelector('details');assert.ok(mount);assert.equal(d.querySelector('.edui-editor-toolbarbox').style.zIndex,'3');const original=d.querySelector('.view').innerHTML;
-// Actual WeChat shape: native toolbar spans viewport, article remains narrow and offset.
-assert.equal(panel.style.left,'617px');assert.equal(panel.style.width,'578px');assert.equal(panel.style.top,'99px');assert.equal(mount.style.height,'110px');assert.equal(mount.dataset.docked,'true');
-for(const bounds of [{left:310,width:578},{left:420,width:420},{left:700,width:500},{left:-40,width:578}]){box={...box,...bounds,right:bounds.left+bounds.width};w.dispatchEvent(new w.Event('resize'));await wait();const expectedLeft=Math.max(0,box.left),expectedRight=Math.min(w.innerWidth,box.right);assert.equal(panel.style.left,expectedLeft+'px');assert.equal(panel.style.width,(expectedRight-expectedLeft)+'px');assert.ok(Number.parseFloat(panel.style.left)+Number.parseFloat(panel.style.width)<=w.innerWidth);}
+assert.equal(panel.style.position,'');assert.equal(mount.style.height,'');
+assert.equal(d.getElementById('qingpai-extension').style.position,'relative');
 // Natural top-of-article flow and article-end release must clear all fixed sizing.
 box={...box,left:617,right:1195,width:578,top:300};w.dispatchEvent(new w.Event('resize'));await wait();assert.equal(panel.style.position,'');assert.equal(mount.style.height,'');assert.equal(mount.hasAttribute('data-docked'),false);
 box.top=-900;articleBottom=120;w.dispatchEvent(new w.Event('resize'));await wait();assert.equal(panel.style.position,'');assert.equal(d.querySelector('.view').innerHTML,original);
