@@ -9,6 +9,8 @@ const wait=()=>new Promise(resolve=>setTimeout(resolve,60));
 (async()=>{await wait();const mount=d.getElementById('qingpai-article-tools'),panel=mount.shadowRoot.querySelector('details');assert.ok(mount);assert.equal(d.querySelector('.edui-editor-toolbarbox').style.zIndex,'3');const original=d.querySelector('.view').innerHTML;
 assert.equal(panel.style.position,'');assert.equal(mount.style.height,'');
 assert.equal(d.getElementById('qingpai-extension').style.position,'relative');
+const entry=d.getElementById('qingpai-extension').shadowRoot.getElementById('qingpai-insert-here');assert.ok(entry);assert.equal(entry.style.position,'fixed');assert.equal(entry.hidden,false);
+const beforeScroll=w.scrollY;entry.dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,cancelable:true}));assert.equal(w.scrollY,beforeScroll);
 // Natural top-of-article flow and article-end release must clear all fixed sizing.
 box={...box,left:617,right:1195,width:578,top:300};w.dispatchEvent(new w.Event('resize'));await wait();assert.equal(panel.style.position,'');assert.equal(mount.style.height,'');assert.equal(mount.hasAttribute('data-docked'),false);
 box.top=-900;articleBottom=120;w.dispatchEvent(new w.Event('resize'));await wait();assert.equal(panel.style.position,'');assert.equal(d.querySelector('.view').innerHTML,original);
